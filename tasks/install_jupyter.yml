@@ -18,7 +18,7 @@
     source /etc/profile.d/conda.sh
     source /etc/profile.d/mamba.sh
     export PIP_NO_CACHE_DIR=false
-    mamba env create -f /tmp/{{ jupyterhub_local_env_name }}.yml -p {{ jupyterhub_local_env_path }} && mamba clean --all -y
+    mamba env create -y -f /tmp/{{ jupyterhub_local_env_name }}.yml -p {{ jupyterhub_local_env_path }} && mamba clean --all -y
   args:
     executable: /bin/bash
     creates: "{{ jupyterhub_local_env_path }}"
@@ -31,7 +31,7 @@
     source /etc/profile.d/conda.sh
     source /etc/profile.d/mamba.sh
     export PIP_NO_CACHE_DIR=false
-    mamba env update --prune -f /tmp/{{ jupyterhub_local_env_name }}.yml -p {{ jupyterhub_local_env_path }} && mamba clean --all -y
+    mamba env update --prune -y -f /tmp/{{ jupyterhub_local_env_name }}.yml -p {{ jupyterhub_local_env_path }} && mamba clean --all -y
   args:
     executable: /bin/bash
   when: not jupyterhub_local_env_create.changed and jupyterhub_local_env_updated.changed
