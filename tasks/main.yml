@@ -1,0 +1,7 @@
+---
+- name: Install Jupyter in a conda environment
+  ansible.builtin.include_tasks: install_jupyter.yml
+- name: Install and configure certbot
+  ansible.builtin.include_tasks: install_certbot.yml
+- name: Setup Jupyter service
+  ansible.builtin.include_tasks: setup_jupyter.yml

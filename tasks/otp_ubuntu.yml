@@ -1,0 +1,13 @@
+---
+- name: Install Google Authenticator
+  ansible.builtin.package:
+    name: libpam-google-authenticator
+
+- name: Jupyterhub PAM module
+  ansible.builtin.blockinfile:
+    path: /etc/pam.d/jupyterhub
+    block: |
+      @include login
+      # Require OTP when user has it configured
+      auth required pam_google_authenticator.so nullok
+    create: true

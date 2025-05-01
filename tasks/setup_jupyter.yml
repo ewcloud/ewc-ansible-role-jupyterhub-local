@@ -1,0 +1,62 @@
+---
+- name: OTP support
+  ansible.builtin.include_tasks: otp_{{ ansible_distribution | lower }}.yml
+  when: jupyterhub_local_with_otp
+
+- name: Create Jupyterhub directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0750"
+  loop:
+    - /var/jupyterhub
+    - /etc/jupyterhub
+
+- name: Create jupyterhub config
+  ansible.builtin.shell: |
+    source /etc/profile.d/conda.sh
+    source /etc/profile.d/mamba.sh
+    mamba run -p {{ jupyterhub_local_env_path }} jupyterhub --generate-config -f /etc/jupyterhub/jupyterhub_config.py
+  args:
+    executable: /bin/bash
+    creates: /etc/jupyterhub/jupyterhub_config.py
+
+- name: Configure jupyterhub with HTTPS
+  ansible.builtin.blockinfile:
+    path: /etc/jupyterhub/jupyterhub_config.py
+    block: |
+      c.JupyterHub.bind_url = 'https://:443'
+      c.JupyterHub.ssl_key = '{{ ssl_key }}'
+      c.JupyterHub.ssl_cert = '{{ ssl_cert }}'
+      # No longer needed as modern browsers will automatically use HTTPS, and then frees 80 for certbot
+      # c.ConfigurableHTTPProxy.command = ['configurable-http-proxy', '--redirect-port', '80']
+      c.Spawner.cmd = ['jupyterhub-singleuser', '--ContentsManager.allow_hidden=True']
+      {% if morpheus is defined %}
+      c.Authenticator.allowed_users = {'{{ morpheus.user.linuxUsername }}'}
+      {% else %}
+      c.Authenticator.allow_all = True
+      {% endif %}
+      {% if jupyterhub_local_with_otp %}
+      c.Authenticator.request_otp = True
+      c.PAMAuthenticator.service = 'jupyterhub'
+      {% endif %}
+  notify:
+    - Restart jupyterhub
+
+- name: Create the systemd service for jupyterhub
+  ansible.builtin.template:
+    src: templates/jupyterhub.service.j2
+    dest: /etc/systemd/system/jupyterhub.service
+  notify:
+    - Reload daemons
+    - Restart jupyterhub
+
+- name: Ensure jupyter service is up and enabled
+  ansible.builtin.service:
+    name: jupyterhub
+    state: started
+    enabled: true
+
+- name: Print Jupyter URL
+  ansible.builtin.debug:
+    msg: "Jupyter ready at https://{{ host_fqdn }}"

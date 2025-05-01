@@ -1,0 +1,37 @@
+---
+- name: Wipe existing conda environment
+  ansible.builtin.file:
+    path: "{{ jupyterhub_local_env_path }}"
+    state: absent
+  when: jupyterhub_local_env_wipe
+
+- name: Copy conda environment description
+  ansible.builtin.copy:
+    src: "env.yml"
+    dest: /tmp/{{ jupyterhub_local_env_name }}.yml
+    mode: "644"
+  register: jupyterhub_local_env_updated
+
+- name: Create conda environment
+  become_user: "{{ conda_user | default(root)}}"
+  ansible.builtin.shell: |
+    source /etc/profile.d/conda.sh
+    source /etc/profile.d/mamba.sh
+    export PIP_NO_CACHE_DIR=false
+    mamba env create -f /tmp/{{ jupyterhub_local_env_name }}.yml -p {{ jupyterhub_local_env_path }} && mamba clean --all -y
+  args:
+    executable: /bin/bash
+    creates: "{{ jupyterhub_local_env_path }}"
+
+  register: jupyterhub_local_env_create
+
+- name: Update conda environment
+  become_user: "{{ conda_user | default(root)}}"
+  ansible.builtin.shell: |
+    source /etc/profile.d/conda.sh
+    source /etc/profile.d/mamba.sh
+    export PIP_NO_CACHE_DIR=false
+    mamba env update --prune -f /tmp/{{ jupyterhub_local_env_name }}.yml -p {{ jupyterhub_local_env_path }} && mamba clean --all -y
+  args:
+    executable: /bin/bash
+  when: not jupyterhub_local_env_create.changed and jupyterhub_local_env_updated.changed
