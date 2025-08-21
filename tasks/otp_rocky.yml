@@ -26,3 +26,4 @@
       session    include      postlogin
       -session   optional     pam_ck_connector.so
     create: true
+    mode: "0644"

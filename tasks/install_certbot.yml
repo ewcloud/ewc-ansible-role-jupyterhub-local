@@ -17,6 +17,7 @@
     - name: Enable CRB repository for el9+ variants
       ansible.builtin.command:
         cmd: dnf config-manager --enable crb
+      changed_when: true
       when: "'crb' not in repolist.stdout"
 
 - name: Setup HTTP(S) firewall rules for RHEL-based platforms
@@ -72,7 +73,8 @@
     dest: /usr/bin/certbot
     state: link
 
-- when: dns_domain is not defined
+- name: Guess domian
+  when: dns_domain is not defined
   block:
     - name: Get FQDN for the host
       ansible.builtin.command: hostname -f
@@ -93,7 +95,14 @@
     ssl_key: "/etc/letsencrypt/live/{{ host_fqdn }}/privkey.pem"
     ssl_cert: "/etc/letsencrypt/live/{{ host_fqdn }}/fullchain.pem"
 
-- name: "Setup Certbot to generate and renew SSL certificate for {{ host_fqdn }} as {{ jupyterhub_local_cert_email}}"
+- name: "Setup Certbot to generate and renew SSL certificate for {{ host_fqdn ~ ' as ' ~ jupyterhub_local_cert_email }}"
   ansible.builtin.command:
-    cmd: /usr/bin/certbot certonly{{ ' --test-cert ' if jupyterhub_local_test_cert else ' ' }}--standalone --noninteractive --agree-tos --email {{ jupyterhub_local_cert_email }} -d {{ host_fqdn }}
+    cmd: >
+      /usr/bin/certbot certonly
+      {{ ' --test-cert ' if jupyterhub_local_test_cert else '' }}
+      --standalone
+      --noninteractive
+      --agree-tos
+      --email {{ jupyterhub_local_cert_email }}
+      -d {{ host_fqdn }}
     creates: "{{ ssl_key }}"

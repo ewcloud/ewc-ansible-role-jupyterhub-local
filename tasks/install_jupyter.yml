@@ -13,7 +13,8 @@
   register: jupyterhub_local_env_updated
 
 - name: Create conda environment
-  become_user: "{{ conda_user | default(root)}}"
+  become: true
+  become_user: "{{ conda_user | default(root) }}"
   ansible.builtin.shell: |
     source /etc/profile.d/conda.sh
     source /etc/profile.d/mamba.sh
@@ -26,7 +27,8 @@
   register: jupyterhub_local_env_create
 
 - name: Update conda environment
-  become_user: "{{ conda_user | default(root)}}"
+  become: true
+  become_user: "{{ conda_user | default(root) }}"
   ansible.builtin.shell: |
     source /etc/profile.d/conda.sh
     source /etc/profile.d/mamba.sh
@@ -34,4 +36,5 @@
     mamba env update --prune -y -f /tmp/{{ jupyterhub_local_env_name }}.yml -p {{ jupyterhub_local_env_path }} && mamba clean --all -y
   args:
     executable: /bin/bash
+  changed_when: true
   when: not jupyterhub_local_env_create.changed and jupyterhub_local_env_updated.changed

@@ -1,12 +1,12 @@
 ---
-jupyterhub_local_env_wipe: no
+jupyterhub_local_env_wipe: false
 jupyterhub_local_env_name: jupyterhub-local
 jupyterhub_local_env_path: "{{ conda_prefix }}/envs/{{ jupyterhub_local_env_name }}"
 
 # If ran outside Morpheus, pass this variable explicitly when running the ansible playbook
 jupyterhub_local_cert_email: "{{ morpheus.user.email | default('changeme@changeme.com') }}"
 jupyterhub_local_test_cert: false
-# dns_domain: 
+# dns_domain:
 
 # Enable OTP support
 jupyterhub_local_with_otp: false
