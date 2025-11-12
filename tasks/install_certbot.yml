@@ -6,7 +6,7 @@
     - name: Ensure EPEL repo is enabled
       ansible.builtin.dnf:
         name: epel-release
-        state: latest
+        state: present
 
     - name: Check if CRB is enabled for el9+ variants
       ansible.builtin.command:
@@ -89,6 +89,22 @@
   ansible.builtin.set_fact:
     host_fqdn: "{{ ansible_hostname }}.{{ dns_domain }}"
   when: dns_domain is defined
+
+- name: "Ensure host is resolvable {{ host_fqdn }}"
+  vars:
+    retry_count: 10
+    interval: 30
+  block:
+    - name: "Check if host is resolvable {{ host_fqdn }}"
+      ansible.builtin.debug:
+        msg: "{{ host_fqdn }} is now resolvable"
+      until: host_fqdn is ansible.utils.resolvable
+      retries: "{{ retry_count }}"
+      delay: "{{ interval }}"
+  rescue:
+    - name: Fail if host is not resolvable
+      ansible.builtin.fail:
+        msg: "Host {{ host_fqdn }} is not resolvable after {{ retry_count * interval }} seconds."
 
 - name: Set Cert paths
   ansible.builtin.set_fact:
